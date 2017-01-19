@@ -42,7 +42,7 @@ public class EntityEnrichmentItemProcessorTest extends AbstractSpringTest {
         assertTrue(docMgr.read("hello.xml").hasContent());
         EntityEnrichmentItemProcessor processor =
             new EntityEnrichmentItemProcessor(
-                getClient(), "src/main/resources/nlp/tokenizer/en-token.bin", "src/main/resources/nlp/en/en-ner-person.bin");
+                getClient(), "src/main/resources/nlp/tokenizer/en-token.bin", "src/main/resources/nlp/namefinder/en-ner-person.bin");
         ValuesItemReader reader = new ValuesItemReader(getClient());
         reader.open(null);
         CountedDistinctValue val = reader.read();

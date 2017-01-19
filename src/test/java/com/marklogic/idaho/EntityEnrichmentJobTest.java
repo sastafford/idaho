@@ -8,7 +8,9 @@ import com.marklogic.junit.Fragment;
 import com.marklogic.spring.batch.test.AbstractJobTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.context.ContextConfiguration;
 
+@ContextConfiguration(classes = {EntityEnrichmentJob.class})
 public class EntityEnrichmentJobTest extends AbstractJobTest {
     
     XMLDocumentManager docMgr;
@@ -30,7 +32,7 @@ public class EntityEnrichmentJobTest extends AbstractJobTest {
         runJob(
             EntityEnrichmentJob.class,
             "--tokenizer_model", "src/main/resources/nlp/tokenizer/en-token.bin",
-            "--named_entity_model", "src/main/resources/nlp/en/en-ner-person.bin");
+            "--named_entity_model", "src/main/resources/nlp/namefinder/en-ner-person.bin");
         StringHandle handle = docMgr.read("hello.xml", new StringHandle());
         logger.info(handle.toString());
         Fragment frag = new Fragment(handle.toString());
