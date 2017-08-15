@@ -2,7 +2,10 @@ package com.marklogic.idaho;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.helper.DatabaseClientProvider;
+import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.query.CountedDistinctValue;
+import com.marklogic.client.query.QueryDefinition;
+import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.spring.batch.item.reader.ValuesItemReader;
 import com.marklogic.spring.batch.item.writer.MarkLogicPatchItemWriter;
 import org.springframework.batch.core.Job;
@@ -20,7 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 
 @EnableBatchProcessing
-@Import( { com.marklogic.spring.batch.config.MarkLogicApplicationContext.class } )
+@Import( { com.marklogic.spring.batch.config.MarkLogicBatchConfiguration.class } )
 public class EntityEnrichmentJob {
     
     private Environment env;
@@ -38,10 +41,13 @@ public class EntityEnrichmentJob {
         StepBuilderFactory stepBuilderFactory,
         DatabaseClientProvider databaseClientProvider,
         @Value("#{jobParameters['tokenizer_model']}") String tokenizerModel,
-        @Value("#{jobParameters['named_entity_model']}") String namedEntityModel) {
+        @Value("#{jobParameters['named_entity_model']}") String namedEntityModel,
+        @Value("#{jobParameters['collection']}") String collection) {
         
         DatabaseClient databaseClient = databaseClientProvider.getDatabaseClient();
-        ItemReader<CountedDistinctValue> reader = new ValuesItemReader(databaseClient);
+        QueryDefinition qd = new StructuredQueryBuilder().collection(collection);
+        ItemReader<CountedDistinctValue> reader =new ValuesItemReader(databaseClient, getQueryOptions(), "uris", qd);
+
         ItemProcessor<CountedDistinctValue, String[]> processor =
             new EntityEnrichmentItemProcessor(databaseClient, tokenizerModel, namedEntityModel);
         ItemWriter<String[]> writer = new MarkLogicPatchItemWriter(databaseClient);
@@ -53,6 +59,16 @@ public class EntityEnrichmentJob {
                 .processor(processor)
                 .writer(writer)
                 .build();
+    }
+
+    public StringHandle getQueryOptions() {
+        return new StringHandle("<options xmlns=\"http://marklogic.com/appservices/search\">\n" +
+                "    <search-option>unfiltered</search-option>\n" +
+                "    <quality-weight>0</quality-weight>\n" +
+                "    <values name=\"uris\">\n" +
+                "        <uri/>\n" +
+                "    </values>\n" +
+                "</options>");
     }
 
 }

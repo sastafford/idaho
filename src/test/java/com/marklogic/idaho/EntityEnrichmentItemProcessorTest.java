@@ -7,10 +7,11 @@ import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.marker.DocumentPatchHandle;
 import com.marklogic.client.query.CountedDistinctValue;
+import com.marklogic.client.query.QueryDefinition;
+import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.junit.spring.AbstractSpringTest;
-import com.marklogic.spring.batch.config.MarkLogicApplicationContext;
+import com.marklogic.spring.batch.config.MarkLogicBatchConfiguration;
 import com.marklogic.spring.batch.item.reader.ValuesItemReader;
-import com.marklogic.spring.batch.test.JobProjectTestConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.test.context.ContextConfiguration;
@@ -22,18 +23,20 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.StringReader;
 
-@ContextConfiguration(classes = { MarkLogicApplicationContext.class } )
+@ContextConfiguration(classes = { MarkLogicBatchConfiguration.class } )
 public class EntityEnrichmentItemProcessorTest extends AbstractSpringTest {
 
     XMLDocumentManager docMgr;
-    
+
+    private final String COLLECTION_NAME = "source";
+
     @Before
     public void setup() {
         DatabaseClient client = getClient();
         docMgr = client.newXMLDocumentManager();
         StringHandle text1 = new StringHandle("<doc><text>Abbey D'Agostino finished the race Tuesday after helping Nikki Hamblin of New Zealand back up and urging her to finish. The two clipped heels during the late part of the race and tumbled to the ground. Hamblin has indicated she will run in the final.  Emma Coburn, who took bronze in the women's 3,000 steeplechase, becoming the first American woman to medal in the event, reacted Wednesday</text></doc>");
         DocumentMetadataHandle handle = new DocumentMetadataHandle();
-        handle.withCollections("sourceXML");
+        handle.withCollections(COLLECTION_NAME);
         docMgr.write("hello.xml", handle, text1);
     }
     
@@ -43,7 +46,9 @@ public class EntityEnrichmentItemProcessorTest extends AbstractSpringTest {
         EntityEnrichmentItemProcessor processor =
             new EntityEnrichmentItemProcessor(
                 getClient(), "src/main/resources/nlp/tokenizer/en-token.bin", "src/main/resources/nlp/namefinder/en-ner-person.bin");
-        ValuesItemReader reader = new ValuesItemReader(getClient());
+
+        QueryDefinition qd = new StructuredQueryBuilder().collection(COLLECTION_NAME);
+        ValuesItemReader reader = new ValuesItemReader(getClient(), getQueryOptions(), "uris", qd);
         reader.open(null);
         CountedDistinctValue val = reader.read();
         String[] info = processor.process(val);
@@ -68,5 +73,15 @@ public class EntityEnrichmentItemProcessorTest extends AbstractSpringTest {
         DocumentPatchHandle patchHandle = xmlPatchBldr.insertFragment("/doc", DocumentPatchBuilder.Position.LAST_CHILD, "<test />").build();
         docMgr.patch("hello.xml", patchHandle);
         
+    }
+
+    public StringHandle getQueryOptions() {
+        return new StringHandle("<options xmlns=\"http://marklogic.com/appservices/search\">\n" +
+                "    <search-option>unfiltered</search-option>\n" +
+                "    <quality-weight>0</quality-weight>\n" +
+                "    <values name=\"uris\">\n" +
+                "        <uri/>\n" +
+                "    </values>\n" +
+                "</options>");
     }
 }
