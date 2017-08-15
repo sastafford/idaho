@@ -12,7 +12,7 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = {EntityEnrichmentJob.class})
+@ContextConfiguration(classes = {EntityEnrichmentJobConfig.class})
 public class EntityEnrichmentJobTest extends AbstractJobRunnerTest {
     
     XMLDocumentManager docMgr;

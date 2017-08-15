@@ -24,7 +24,7 @@ import org.springframework.core.env.Environment;
 
 @EnableBatchProcessing
 @Import( { com.marklogic.spring.batch.config.MarkLogicBatchConfiguration.class } )
-public class EntityEnrichmentJob {
+public class EntityEnrichmentJobConfig {
     
     private Environment env;
     
